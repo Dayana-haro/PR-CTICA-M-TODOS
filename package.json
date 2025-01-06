@@ -1,0 +1,14 @@
+{
+  "name": "arquitectura-cliente--servidor",
+  "version": "1.0.0",
+  "description": "Estructura all (get-put-post-delete)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dayana Haro",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
