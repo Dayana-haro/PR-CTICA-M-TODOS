@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Carreras</title>
+    <style>
+        body {
+            background-image: url('../../fondo.jpg'); /* Fondo de carreras */
+            background-size: cover;
+            background-position: center;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #e0f7fa, #80deea);
+            color: #333;
+            text-align: center;
+        }
+
+        header {
+            background-color: #00695c;
+            color: #fff;
+            padding: 20px;
+        }
+
+        h1 {
+            margin: 10px 0;
+            font-size: 2.5rem;
+        }
+
+        section {
+            background-color: #ffffff;
+            padding: 20px;
+            margin: 20px auto;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #00796b;
+        }
+
+        input, button {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        input {
+            width: calc(100% - 22px);
+        }
+
+        button {
+            background-color: #00796b;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #004d40;
+        }
+
+        #raceList div {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border: 1px solid #b2dfdb;
+            border-radius: 5px;
+        }
+
+        #raceList button {
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        #raceList button {
+            background-color: #8bc34a;
+            color: #fff;
+        }
+
+        #raceList button:hover {
+            background-color: #689f38;
+        }
+
+        .runners-list {
+            background-color: #f1f8e9;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        li {
+            padding: 5px 0;
+            border-bottom: 1px solid #c8e6c9;
+        }
+
+        li:last-child {
+            border-bottom: none;
+        }
+
+        strong {
+            color: #388e3c;
+        }
+    </style>
+    <script>
+        const API_URL = "http://localhost:3000/races";
+
+        async function createRace() {
+            const numCorredores = document.getElementById("numCorredores").value;
+            const distancia = document.getElementById("distancia").value;
+
+            if (!numCorredores || !distancia) {
+                alert("Por favor, complete todos los campos.");
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ numCorredores, distancia })
+                });
+                const data = await response.json();
+                alert(`Carrera creada con ID: ${data.id}`);
+                listRaces();
+            } catch (error) {
+                console.error("Error al crear la carrera:", error);
+            }
+        }
+
+        async function listRaces() {
+            try {
+                const response = await fetch(`${API_URL}/all`);
+                const data = await response.json();
+
+                const raceList = document.getElementById("raceList");
+                raceList.innerHTML = "";
+
+                if (data.length === 0) {
+                    raceList.innerHTML = "<p>No hay carreras registradas.</p>";
+                    return;
+                }
+
+                data.forEach((race) => {
+                    const ganador = race.terminado ? `Corredor ${race.ganador}` : "Sin ganador";
+                    raceList.innerHTML += `
+                        <div>
+                            <strong>ID:</strong> ${race.id} |
+                            <strong>Distancia:</strong> ${race.distancia} metros |
+                            <strong>Terminado:</strong> ${race.terminado ? "Sí" : "No"} |
+                            <strong>Ganador:</strong> ${ganador}
+                            <div>
+                                <button onclick="simulateRace(${race.id})">Simular Carrera</button>
+                                <button onclick="deleteRace(${race.id})">Eliminar Carrera</button>
+                                <button onclick="toggleRunners(${race.id})">Mostrar Corredores</button>
+                            </div>
+                            <div id="runners-${race.id}" class="runners-list" style="display: none;">
+                                <strong>Corredores:</strong>
+                                <ul id="runnerList-${race.id}"></ul>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                console.error("Error al listar las carreras:", error);
+            }
+        }
+
+        async function simulateRace(id) {
+            try {
+                const response = await fetch(`${API_URL}/simulate/${id}`, { method: "PUT" });
+                const data = await response.json();
+                if (response.ok) {
+                    alert(`Carrera simulada. Ganador: Corredor ${data.ganador}`);
+                } else {
+                    alert(`Error: ${data.error}`);
+                }
+                listRaces();
+            } catch (error) {
+                console.error("Error al simular la carrera:", error);
+            }
+        }
+
+        async function deleteRace(id) {
+            try {
+                const response = await fetch(`${API_URL}/delete/${id}`, { method: "DELETE" });
+                if (response.ok) {
+                    alert(`Carrera con ID ${id} eliminada.`);
+                } else {
+                    const data = await response.json();
+                    alert(`Error: ${data.error}`);
+                }
+                listRaces();
+            } catch (error) {
+                console.error("Error al eliminar la carrera:", error);
+            }
+        }
+
+        async function toggleRunners(raceId) {
+            const runnersDiv = document.getElementById(`runners-${raceId}`);
+            const isVisible = runnersDiv.style.display === "block";
+
+            if (isVisible) {
+                runnersDiv.style.display = "none";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/${raceId}`);
+                const race = await response.json();
+
+                const runnerList = document.getElementById(`runnerList-${raceId}`);
+                runnerList.innerHTML = "";
+
+                race.corredores.forEach((runner) => {
+                    runnerList.innerHTML += `
+                        <li>
+                            <strong>ID:</strong> ${runner.id} |
+                            <strong>Velocidad:</strong> ${runner.velocidad.toFixed(2)} m/s |
+                            <strong>Posición:</strong> ${runner.posicion.toFixed(2)} metros
+                        </li>
+                    `;
+                });
+
+                runnersDiv.style.display = "block";
+            } catch (error) {
+                console.error("Error al obtener los corredores:", error);
+            }
+        }
+    </script>
+</head>
+<body onload="listRaces()">
+    <header>
+        <h1>Gestión de Carreras</h1>
+    </header>
+    <main>
+        <section>
+            <h2>Crear Nueva Carrera</h2>
+            <label for="numCorredores">Número de Corredores:</label>
+            <input type="number" id="numCorredores" min="1" required>
+            <label for="distancia">Distancia (metros):</label>
+            <input type="number" id="distancia" min="1" required>
+            <button onclick="createRace()">Crear Carrera</button>
+        </section>
+
+        <section>
+            <h2>Listado de Carreras</h2>
+            <div class="race-list" id="raceList"></div>
+        </section>
+    </main>
+</body>
+</html>
